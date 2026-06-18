@@ -1,0 +1,79 @@
+services:
+  db:
+    image: postgres:16              # 从网上直接下载现成的“16号仓库”
+    environment:                    # 给仓库设置管理员账号和密码
+      POSTGRES_DB: app              # 数据库名叫 app
+      POSTGRES_USER: app            # 用户名叫 app
+      POSTGRES_PASSWORD: secret     # 密码是 secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data  # 重点：把仓库的数据存在电脑硬盘上
+                                         # 这样即便仓库拆了，货（数据）还在
+    healthcheck:                    # 自动体检
+      test: ["CMD-SHELL", "pg_isready -U app -d app"] # 检查仓库门开没开，能不能进人
+      interval: 3s                  # 每 3 秒检查一次
+      retries: 30                   # 检查 30 次还没好就放弃
+
+  backend:
+    build:
+      context: ./backend            # 仓库没现成的，得根据你自己写的代码现场“盖房子”
+    environment:
+      DATABASE_URL: postgresql://app:secret@db:5432/app # 告诉厨房：仓库在 db 这个地址，密码是啥
+    depends_on:                     # 启动顺序
+      db:
+        condition: service_healthy  # 必须等仓库“体检通过”了，厨房才开门
+                                    # 否则厨房开门了没菜（数据）会报错
+    ports:
+      - "31889:8000"                # 门口开个窗户：你从外面访问电脑的 31889 端口
+                                    # 就能连到厨房内部的 8000 端口
+
+  frontend:
+    build:
+      context: ./frontend           # 也是根据你自己的代码现场盖房子
+    depends_on:
+      - backend                     # 必须等厨房开门了，店面才开始营业
+    ports:
+      - "31888:80"                  # 你在浏览器输入 localhost:31888 
+                                    # 就能看到 Nginx 提供的网页（内部是 80 端口
+
+volumes:
+  pgdata:
+
+
+
+# services:
+#   db:
+#     image: postgres:16              # 从网上直接下载现成的“16号仓库”
+#     environment:                    # 给仓库设置管理员账号和密码
+#       POSTGRES_DB: app              # 数据库名叫 app
+#       POSTGRES_USER: app            # 用户名叫 app
+#       POSTGRES_PASSWORD: secret     # 密码是 secret
+#     volumes:
+#       # 重点：左边写你电脑的路径，右边写容器内的路径
+#       # 建议使用相对路径 ./db-data，它会自动指向 demo1/db-data
+#       - ./db-data:/var/lib/postgresql/data 
+#     healthcheck:                    # 自动体检
+#       test: ["CMD-SHELL", "pg_isready -U app -d app"] # 检查仓库门开没开，能不能进人
+#       interval: 3s                  # 每 3 秒检查一次
+#       retries: 30                   # 检查 30 次还没好就放弃
+
+#   backend:
+#     build:
+#       context: ./backend            # 仓库没现成的，得根据你自己写的代码现场“盖房子”
+#     environment:
+#       DATABASE_URL: postgresql://app:secret@db:5432/app # 告诉厨房：仓库在 db 这个地址，密码是啥
+#     depends_on:                     # 启动顺序
+#       db:
+#         condition: service_healthy  # 必须等仓库“体检通过”了，厨房才开门
+#                                     # 否则厨房开门了没菜（数据）会报错
+#     ports:
+#       - "31889:8000"                # 门口开个窗户：你从外面访问电脑的 31889 端口
+#                                     # 就能连到厨房内部的 8000 端口
+
+#   frontend:
+#     build:
+#       context: ./frontend           # 也是根据你自己的代码现场盖房子
+#     depends_on:
+#       - backend                     # 必须等厨房开门了，店面才开始营业
+#     ports:
+#       - "31888:80"                  # 你在浏览器输入 localhost:31888 
+#                                     # 就能看到 Nginx 提供的网页（内部是 80 端口

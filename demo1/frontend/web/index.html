@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>demo1 前后端分离（Compose）</title>
+    <style>
+      :root { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
+      body { margin: 0; background: #0b1220; color: #e6edf3; }
+      .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 64px; }
+      .card { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); border-radius: 14px; padding: 18px; }
+      h1 { font-size: 22px; margin: 0 0 12px; }
+      .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+      input { flex: 1; min-width: 240px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.25); color: #e6edf3; }
+      button { padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: #2563eb; color: white; cursor: pointer; }
+      button.secondary { background: rgba(255,255,255,.08); }
+      ul { list-style: none; padding: 0; margin: 14px 0 0; }
+      li { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.18); margin-bottom: 10px; }
+      .muted { color: rgba(230,237,243,.7); font-size: 13px; }
+      code { background: rgba(255,255,255,.08); padding: 2px 6px; border-radius: 6px; }
+      a { color: #93c5fd; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>demo1：前端(Nginx) + 后端(FastAPI) + Postgres（Docker Compose）</h1>
+        <div class="muted">
+          前端通过 Nginx 反代调用 <code>/api/*</code>，后端连接 Postgres 存储 todo。
+        </div>
+        <div class="row">
+          <input id="title" placeholder="输入一个 todo，例如：学习 git push" />
+          <button id="addBtn">新增</button>
+          <button id="refreshBtn" class="secondary">刷新</button>
+        </div>
+        <ul id="list"></ul>
+        <div class="muted">
+          快速检查：<a href="/api/health" target="_blank" rel="noreferrer">/api/health</a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      async function api(path, opts) {
+        const res = await fetch(path, opts);
+        return await res.json();
+      }
+
+      function render(items) {
+        const ul = $("list");
+        ul.innerHTML = "";
+        for (const it of items) {
+          const li = document.createElement("li");
+          const left = document.createElement("div");
+          left.textContent = (it.done ? "✅ " : "⬜ ") + it.title;
+          const btn = document.createElement("button");
+          btn.className = "secondary";
+          btn.textContent = "切换完成";
+          btn.onclick = async () => {
+            await api(`/api/todos/${it.id}/toggle`, { method: "POST" });
+            await refresh();
+          };
+          li.appendChild(left);
+          li.appendChild(btn);
+          ul.appendChild(li);
+        }
+      }
+
+      async function refresh() {
+        const data = await api("/api/todos");
+        render(data.items || []);
+      }
+
+      $("refreshBtn").onclick = refresh;
+      $("addBtn").onclick = async () => {
+        const title = $("title").value.trim();
+        if (!title) return;
+        $("title").value = "";
+        await api("/api/todos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title }),
+        });
+        await refresh();
+      };
+
+      refresh().catch(console.error);
+    </script>
+  </body>
+</html>
+

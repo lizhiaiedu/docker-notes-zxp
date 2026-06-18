@@ -1,0 +1,20 @@
+# 1. 选一个带 Python 的基础镜像（slim 版更小）
+FROM python:3.12-slim
+
+# 2. 设工作目录，后续命令都在 /app 下执行
+WORKDIR /app
+
+# 3. 先只拷依赖清单，再装依赖 —— 利用分层缓存，改代码时不必重装依赖
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 4. 再拷源代码
+COPY app.py .
+
+# 5. 声明容器对外暴露的端口（文档作用）
+EXPOSE 5000
+
+# 6. 容器启动时运行的命令
+CMD ["python", "app.py"]
+
+#最终镜像 = 基础镜像 + pip 缓存 + 依赖 + 代码
