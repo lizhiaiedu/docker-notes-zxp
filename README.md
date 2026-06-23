@@ -1,6 +1,6 @@
-# docker\-vllm 开源项目README介绍
-
-# docker\-vllm 🚀｜Docker 从入门到 vLLM 大模型容器化部署实战讲义
+# 「鲤智AI教育公开课」 
+## docker\-vllm 开源教育项目介绍
+## docker\-vllm 🚀｜Docker 从入门到 vLLM 大模型容器化部署实战讲义
 
 **出品方：鲤智AI教育 🐟｜专注AI全栈、云原生、容器化实战教学**
 
